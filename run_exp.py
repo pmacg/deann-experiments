@@ -17,7 +17,6 @@ import numpy as np
 import pandas as pd
 import time
 import json
-import docker
 import traceback
 import psutil
 
@@ -125,6 +124,7 @@ def run_no_docker(cpu_limit, mem_limit, dataset, algo, kernel, docker_tag, wrapp
     cmd = ['--dataset', dataset,
            '--algorithm', algo,
            '--wrapper', wrapper,
+           '--kernel', kernel,
            '--constructor', constructor,
            '--mu', str(mu),
            '--bw', str(bw),
