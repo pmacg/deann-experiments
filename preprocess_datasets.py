@@ -103,7 +103,7 @@ def write_output(train, validation, test, fn, kernel, compute_bandwidth=False): 
     assert validation.dtype == np.float64
     assert test.dtype == np.float64
     queries = test.shape[0]
-    assert queries == 500
+    assert queries == 10000
     assert validation.shape[0] == queries
 
     f = h5py.File(fn, 'w')
@@ -816,7 +816,7 @@ def create_dataset(dataset, kernel, compute_bandwidth=True):
     output_filename = f'data/{filename_prefix}.hdf5'
 
     start = time.time()
-    queries=500
+    queries=10000
     # data, query = train_test_split(X, test_size=queries, random_state=42)
     train, test = train_test_split(X, test_size=2*queries, random_state=42)
     validation, test = train_test_split(test, test_size=queries, random_state=42)
