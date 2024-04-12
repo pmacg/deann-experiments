@@ -27,7 +27,7 @@ class RSEstimator(BaseEstimator):
         self.d = X.shape[1]
 
     def query(self, Y):
-        logfilename = f'{self.name()} {self.dataset} {self.mu} kernel={self.kernel} eps={self.eps} tau={self.tau} {datetime.now()}.log'
+        logfilename = f'logs/{self.name()} {self.dataset} {self.mu} kernel={self.kernel} eps={self.eps} tau={self.tau} {datetime.now()}.log'
         self.m = Y.shape[0]
         with NamedTemporaryFile('w', delete = True) as f:
             self.write_conf(f)
