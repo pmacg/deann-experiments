@@ -82,8 +82,9 @@ def run_from_cmdline(args=None):
     # est.fit(numpy.array(X, dtype=numpy.float32))
     est.fit(X)
     print(f'Preprocessing took {(time.time() - t0) * 1e3} ms.')
-    for query_params in query_args:
-        print(f'Running {algo} with {query_params}')
+    num_params_to_try = len(query_args)
+    for i, query_params in enumerate(query_args):
+        print(f'Running {i} / {num_params_to_try} experiment for {algo} with {query_params}.')
         results = list()
         est.set_query_param(query_params)
         # est.query(numpy.array(Y, dtype=numpy.float32))
