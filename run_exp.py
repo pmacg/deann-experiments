@@ -2,8 +2,8 @@ import os
 
 from cmd_runner import run_from_cmdline
 from install import build
-os.environ['OMP_NUM_THREADS'] = '1'
-os.environ['MKL_NUM_THREADS'] = '1'
+os.environ['OMP_NUM_THREADS'] = str(len(os.sched_getaffinity(0)))
+os.environ['MKL_NUM_THREADS'] = str(len(os.sched_getaffinity(0)))
 from itertools import product
 from preprocess_datasets import get_dataset,DATASETS
 from result import get_result_fn, result_exists, write_result
@@ -138,7 +138,8 @@ def run_no_docker(cpu_limit, mem_limit, dataset, algo, kernel, docker_tag, wrapp
 
 def run_worker(args, queue, i):
     while not queue.empty():
-        algo, bw, kernel, algo_def, build_args, query_args = queue.get()
+        algo, bw, kernel, algo_def, build_args, query_args, id, num_experiments = queue.get()
+        print(f"Running experiment {id} / {num_experiments}...")
         avail_mem = psutil.virtual_memory().available
         mem_limit = min(avail_mem, int(32e9)) # use max 32gb
 
@@ -273,13 +274,14 @@ def main():
             del exps[algo]
     print(exps)
 
-    if len(exps) == 0:
+    num_experiments = len(exps)
+    if num_experiments == 0:
         print("No experiments to run.")
         exit(-1)
 
     queue = multiprocessing.Queue()
-    for algo, params_dict in exps.items():
-            queue.put((algo, bw, kernel, definitions[algo], params_dict["build"], json.dumps(params_dict["query"])))
+    for id, algo, params_dict in enumerate(exps.items()):
+            queue.put((algo, bw, kernel, definitions[algo], params_dict["build"], json.dumps(params_dict["query"]), id, num_experiments))
     workers = [multiprocessing.Process(target=run_worker, args=(args, queue, i)) for i in range(args.cpu, args.cpu + 1)]
     [worker.start() for worker in workers]
     [worker.join() for worker in workers]
