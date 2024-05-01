@@ -5,6 +5,8 @@ import yaml
 import h5py
 import numpy as np
 import time
+import signal
+from contextlib import contextmanager
 
 
 from itertools import product
@@ -12,6 +14,21 @@ from preprocess_datasets import (get_dataset,DATASETS)
 from result import (get_result_fn, write_result)
 
 QUERY_TIME_CUTOFF = 2
+
+class TimeoutException(Exception): pass
+
+
+@contextmanager
+def time_limit(seconds):
+    def signal_handler(signum, frame):
+        raise TimeoutException("Timed out!")
+    signal.signal(signal.SIGALRM, signal_handler)
+    signal.alarm(seconds)
+    try:
+        yield
+    finally:
+        signal.alarm(0)
+
 
 def run_from_cmdline(args=None):
     parser = argparse.ArgumentParser()
@@ -84,27 +101,21 @@ def run_from_cmdline(args=None):
     est.fit(X)
     print(f'Preprocessing took {(time.time() - t0) * 1e3} ms.')
     num_params_to_try = len(query_args)
-    last_query_time = 0
-    last_query_params = query_args[0]
+    allowed_time_seconds = 10000 * QUERY_TIME_CUTOFF / 1000
     for i, query_params in enumerate(query_args):
         print(f'Running {i+1} / {num_params_to_try} experiment for {algo} with {query_params}.', flush=True)
-        if last_query_time >= QUERY_TIME_CUTOFF:
-            any_lower_params = False
-            for j in range(len(query_params)):
-                if query_params[j] < last_query_params[j]:
-                    any_lower_params = True
-            if not any_lower_params:
-                continue
-        results = list()
-        est.set_query_param(query_params)
-        for rep in range(args.reps):
-            results.append(est.query(Y))
-        processed_results = est.process_results(results)
-        write_result(processed_results, args.dataset, 
-            args.mu, args.query_set, algo, args.build_args, json.dumps(query_params),
-            build_time=est.build_time)
-        last_query_time = np.mean(processed_results['time'])
-        last_query_params = query_params
+        try:
+            with time_limit(allowed_time_seconds):
+                results = list()
+                est.set_query_param(query_params)
+                for rep in range(args.reps):
+                    results.append(est.query(Y))
+                processed_results = est.process_results(results)
+                write_result(processed_results, args.dataset,
+                    args.mu, args.query_set, algo, args.build_args, json.dumps(query_params),
+                    build_time=est.build_time)
+        except TimeoutException as e:
+            print("Timed out.")
 
 if __name__ == "__main__":
     run_from_cmdline()
