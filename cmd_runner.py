@@ -13,7 +13,7 @@ from itertools import product
 from preprocess_datasets import (get_dataset,DATASETS)
 from result import (get_result_fn, write_result)
 
-QUERY_TIME_CUTOFF = 2
+QUERY_TIME_CUTOFF = 4
 
 class TimeoutException(Exception): pass
 
