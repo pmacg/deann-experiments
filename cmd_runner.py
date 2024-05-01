@@ -103,7 +103,7 @@ def run_from_cmdline(args=None):
         write_result(processed_results, args.dataset, 
             args.mu, args.query_set, algo, args.build_args, json.dumps(query_params),
             build_time=est.build_time)
-        last_query_time = processed_results['time']
+        last_query_time = np.mean(processed_results['time'])
         last_query_params = query_params
 
 if __name__ == "__main__":
