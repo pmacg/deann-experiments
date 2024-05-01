@@ -84,6 +84,8 @@ def run_from_cmdline(args=None):
     est.fit(X)
     print(f'Preprocessing took {(time.time() - t0) * 1e3} ms.')
     num_params_to_try = len(query_args)
+    last_query_time = 0
+    last_query_params = query_args[0]
     for i, query_params in enumerate(query_args):
         print(f'Running {i+1} / {num_params_to_try} experiment for {algo} with {query_params}.', flush=True)
         if last_query_time >= QUERY_TIME_CUTOFF:
