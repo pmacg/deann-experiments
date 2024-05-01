@@ -11,6 +11,8 @@ from itertools import product
 from preprocess_datasets import (get_dataset,DATASETS)
 from result import (get_result_fn, write_result)
 
+QUERY_TIME_CUTOFF = 2
+
 def run_from_cmdline(args=None):
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -79,24 +81,28 @@ def run_from_cmdline(args=None):
     est = Est_class(args.dataset, args.query_set, args.kernel, args.mu, args.bw, build_args)
     print(f'Running {algo}')
     t0 = time.time()
-    # est.fit(numpy.array(X, dtype=numpy.float32))
     est.fit(X)
     print(f'Preprocessing took {(time.time() - t0) * 1e3} ms.')
     num_params_to_try = len(query_args)
     for i, query_params in enumerate(query_args):
-        print(f'Running {i} / {num_params_to_try} experiment for {algo} with {query_params}.', flush=True)
+        print(f'Running {i+1} / {num_params_to_try} experiment for {algo} with {query_params}.', flush=True)
+        if last_query_time >= QUERY_TIME_CUTOFF:
+            any_lower_params = False
+            for j in range(len(query_params)):
+                if query_params[j] < last_query_params[j]:
+                    any_lower_params = True
+            if not any_lower_params:
+                continue
         results = list()
         est.set_query_param(query_params)
-        # est.query(numpy.array(Y, dtype=numpy.float32))
         for rep in range(args.reps):
             results.append(est.query(Y))
-        #try:
         processed_results = est.process_results(results)
         write_result(processed_results, args.dataset, 
             args.mu, args.query_set, algo, args.build_args, json.dumps(query_params),
             build_time=est.build_time)
-        #except:
-        #    print(f"Error processing {algo} with {query_params}")
+        last_query_time = processed_results['time']
+        last_query_params = query_params
 
 if __name__ == "__main__":
     run_from_cmdline()
